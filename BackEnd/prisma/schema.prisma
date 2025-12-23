@@ -1,0 +1,126 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model animators {
+  id                             String       @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  user_id                        String?      @unique @db.Uuid
+  supervisor_id                  String?      @db.Uuid
+  chef_id                        String?      @db.Uuid
+  binome_code                    String?      @db.VarChar(10)
+  created_at                     DateTime?    @default(now()) @db.Timestamptz(6)
+  users_animators_chef_idTousers users?       @relation("animators_chef_idTousers", fields: [chef_id], references: [id], onUpdate: NoAction)
+  supervisors                    supervisors? @relation(fields: [supervisor_id], references: [id], onUpdate: NoAction)
+  users_animators_user_idTousers users?       @relation("animators_user_idTousers", fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  contacts                       contacts[]
+  inventory                      inventory[]
+
+  @@index([chef_id], map: "idx_animators_chef_id")
+  @@index([supervisor_id], map: "idx_animators_supervisor_id")
+  @@index([user_id], map: "idx_animators_user_id")
+}
+
+model answers {
+  id              String     @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  contact_id      String?    @db.Uuid
+  question_id     String?    @db.Uuid
+  selected_option String     @db.VarChar(200)
+  created_at      DateTime?  @default(now()) @db.Timestamptz(6)
+  contacts        contacts?  @relation(fields: [contact_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  questions       questions? @relation(fields: [question_id], references: [id], onUpdate: NoAction)
+
+  @@unique([contact_id, question_id])
+  @@index([contact_id], map: "idx_answers_contact_id")
+  @@index([question_id], map: "idx_answers_question_id")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model contacts {
+  id                String     @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  animator_id       String?    @db.Uuid
+  first_name        String     @db.VarChar(100)
+  last_name         String     @db.VarChar(100)
+  phone_number      String     @unique @db.VarChar(20)
+  address           String
+  commune           String     @db.VarChar(50)
+  wilaya            String     @db.VarChar(50)
+  activation_sector String     @db.VarChar(50)
+  samples_given     Int        @default(0)
+  submitted_at      DateTime?  @default(now()) @db.Timestamptz(6)
+  answers           answers[]
+  animators         animators? @relation(fields: [animator_id], references: [id], onUpdate: NoAction)
+
+  @@index([activation_sector], map: "idx_contacts_activation_sector")
+  @@index([animator_id], map: "idx_contacts_animator_id")
+  @@index([phone_number], map: "idx_contacts_phone_number")
+  @@index([submitted_at], map: "idx_contacts_submitted_at")
+  @@index([wilaya], map: "idx_contacts_wilaya")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model inventory {
+  id               String     @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  animator_id      String?    @db.Uuid
+  chef_id          String?    @db.Uuid
+  quantity         Int
+  notes            String?
+  transaction_date DateTime?  @default(now()) @db.Timestamptz(6)
+  created_at       DateTime?  @default(now()) @db.Timestamptz(6)
+  animators        animators? @relation(fields: [animator_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  users            users?     @relation(fields: [chef_id], references: [id], onUpdate: NoAction)
+
+  @@index([animator_id], map: "idx_inventory_animator_id")
+  @@index([chef_id], map: "idx_inventory_chef_id")
+  @@index([transaction_date], map: "idx_inventory_transaction_date")
+}
+
+model questions {
+  id            String    @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  question_text String
+  options       Json
+  is_active     Boolean?  @default(true)
+  created_at    DateTime? @default(now()) @db.Timestamptz(6)
+  answers       answers[]
+
+  @@index([is_active], map: "idx_questions_active")
+}
+
+model supervisors {
+  id           String      @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  full_name    String      @db.VarChar(100)
+  phone_number String?     @db.VarChar(20)
+  chef_id      String?     @db.Uuid
+  is_active    Boolean?    @default(true)
+  created_at   DateTime?   @default(now()) @db.Timestamptz(6)
+  animators    animators[]
+  users        users?      @relation(fields: [chef_id], references: [id], onUpdate: NoAction)
+
+  @@index([chef_id], map: "idx_supervisors_chef_id")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model users {
+  id                                 String        @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  username                           String        @unique @db.VarChar(50)
+  password_hash                      String        @db.VarChar(255)
+  full_name                          String        @db.VarChar(100)
+  role                               String        @db.VarChar(20)
+  phone_number                       String?       @db.VarChar(20)
+  zone                               String?       @db.VarChar(50)
+  is_active                          Boolean?      @default(true)
+  created_at                         DateTime?     @default(now()) @db.Timestamptz(6)
+  animators_animators_chef_idTousers animators[]   @relation("animators_chef_idTousers")
+  animators_animators_user_idTousers animators?    @relation("animators_user_idTousers")
+  inventory                          inventory[]
+  supervisors                        supervisors[]
+
+  @@index([role], map: "idx_users_role")
+  @@index([username], map: "idx_users_username")
+}
