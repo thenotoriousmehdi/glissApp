@@ -13,12 +13,30 @@ dotenv.config();
 const app = express();
 app.set("trust proxy", 1);
 
-app.use(cors({
-  origin: ["http://localhost:5173", "https://glissapp-five.vercel.app"] ,
+const corsOptions = {
+  origin: function (origin, callback) {
+    const allowedOrigins = [
+      "http://localhost:5173",
+      "https://glissapp-five.vercel.app"
+    ];
+    
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) return callback(null, true);
+    
+    // Check if origin matches allowed origins or ends with .vercel.app
+    if (allowedOrigins.includes(origin) || origin.endsWith('.vercel.app')) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
   credentials: true,
   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "Authorization"],
-}))
+  allowedHeaders: ["Content-Type", "Authorization", "Cookie"],
+  exposedHeaders: ["Set-Cookie"],
+};
+
+app.use(cors(corsOptions));
 
 app.use(cookieParser());
 app.use(express.json());
@@ -30,8 +48,10 @@ app.get("/", (req, res) => {
   res.send("API is running");
 });
 
+
 const PORT = process.env.PORT || 3000;
 
-app.listen(PORT, () => {
-  console.log(`Server running on http://localhost:${PORT}`);
+app.listen(PORT, "0.0.0.0", () => {
+  console.log(`Server running on port ${PORT}`);
 });
+
