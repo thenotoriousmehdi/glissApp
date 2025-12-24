@@ -1,13 +1,14 @@
 import { useState, type ReactNode } from "react";
 import type { User } from "../../types/auth";
 import { ConfirmationModal } from "../ConfirmationModal";
+import logogliss from "../../assets/logogliss.png";
+import logoglisssmall from "../../assets/logoglisssmall.png";
 import {
   Sidebar,
   SidebarContent,
   SidebarFooter,
   SidebarGroup,
   SidebarGroupContent,
-  SidebarGroupLabel,
   SidebarHeader,
   SidebarMenu,
   SidebarMenuButton,
@@ -38,7 +39,6 @@ type NavItem = {
 };
 
 type NavSection = {
-  section: string;
   items: NavItem[];
 };
 
@@ -48,8 +48,7 @@ function getNavigationSections(role?: string): NavSection[] {
   if (normalizedRole === "animator") {
     return [
       {
-        section: "Gestion",
-        items: [{ title: "Ajouter un contact", url: "/clients", icon: Add01Icon }],
+        items: [{ title: "Ajouter un contact", url: "/addcontacts", icon: Add01Icon }],
       },
     ];
   }
@@ -57,7 +56,6 @@ function getNavigationSections(role?: string): NavSection[] {
   if (normalizedRole === "chef" || normalizedRole === "admin") {
     return [
       {
-        section: "Général",
         items: [
           {
             title: "Tableau de bord",
@@ -71,7 +69,6 @@ function getNavigationSections(role?: string): NavSection[] {
 
   return [
     {
-      section: "Général",
       items: [
         {
           title: "Tableau de bord",
@@ -123,20 +120,26 @@ export default function DashboardLayout({
   return (
     <SidebarProvider>
       <div className="flex min-h-screen w-full">
-        <Sidebar collapsible="icon">
+        <Sidebar collapsible="icon" >
           <SidebarHeader className="border-b border-sidebar-border">
-            <div className="flex items-center justify-center p-2">
-              <div className="w-24 h-8 group-data-[collapsible=icon]:hidden" />
-              <div className="w-8 h-8 hidden group-data-[collapsible=icon]:block" />
+           <div className="flex items-center justify-center ">
+              <img
+                src={logogliss}
+                alt="Logo Lesieur"
+                className="w-24 group-data-[collapsible=icon]:hidden"
+              />
+              <img
+                src={logoglisssmall}
+                alt="Logo Lesieur"
+                className="w-6 hidden group-data-[collapsible=icon]:block"
+              />
             </div>
           </SidebarHeader>
 
           <SidebarContent>
             {navigationSections.map((section) => (
-              <SidebarGroup key={section.section}>
-                <SidebarGroupLabel className="px-4 my-2 text-xs font-semibold  text-muted-foreground tracking-wide">
-                  {section.section}
-                </SidebarGroupLabel>
+              <SidebarGroup >
+               
 
                 <SidebarGroupContent>
                   <SidebarMenu className="space-y-0">
@@ -148,7 +151,7 @@ export default function DashboardLayout({
                           style={
                             location.pathname === item.url
                               ? {
-                                  backgroundColor: "rgba(15, 90, 64, 1)",
+                                  backgroundColor: "rgba(0, 0, 0, 1)",
                                   color: "#ffffff",
                                   padding: "24px 16px",
                                   boxShadow:
@@ -157,7 +160,7 @@ export default function DashboardLayout({
                                 }
                               : { padding: "24px 16px" }
                           }
-                          className="w-full data-[active=true]:bg-[#0F5A40] data-[active=true]:text-white hover:data-[active=true]:bg-[#0F5A40]"
+                          className="w-full data-[active=true]:bg-[#000000] data-[active=true]:text-white hover:data-[active=true]:bg-[#000000]"
                         >
                           <item.icon className="h-4 w-4 group-data-[collapsed=true]:h-12 group-data-[collapsed=true]:w-12 transition-all duration-200" />
                           <span className="group-data-[collapsed=true]:hidden">
@@ -186,7 +189,7 @@ export default function DashboardLayout({
                         {displayName}
                       </span>
                       <span className="text-xs text-muted-foreground truncate">
-                        {user.username}
+                        {user.role}
                       </span>
                     </div>
                   </div>

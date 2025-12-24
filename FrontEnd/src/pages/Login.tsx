@@ -1,6 +1,9 @@
 import { useState, type FormEvent } from "react";
 import type { User } from "../types/auth";
+import logogliss from "../assets/logogliss.png";
 import { useAuth } from "../contexts/AuthContext";
+
+
 
 interface LoginProps {
   onLoginSuccess: (user: User) => void;
@@ -12,6 +15,7 @@ function Login({ onLoginSuccess }: LoginProps) {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+
 
   const handleLogin = async (e: FormEvent) => {
     e.preventDefault();
@@ -29,9 +33,10 @@ function Login({ onLoginSuccess }: LoginProps) {
   };
 
   return (
-    <div className="min-h-screen bg-[#0F5A40] flex items-center justify-center p-4">
+    <div className="min-h-screen bg-[#000000] flex items-center justify-center p-4">
       <div className="bg-white rounded-2xl shadow-xl p-8 max-w-md w-full">
         <div className="text-center mb-8">
+          <img src={logogliss} alt="Logo Gliss" className="w-32 mx-auto" />
           <h1 className="text-3xl font-bold text-gray-800">Connexion</h1>
           <p className="text-gray-600">
             Entrez vos informations pour vous connecter
@@ -84,7 +89,7 @@ function Login({ onLoginSuccess }: LoginProps) {
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-[#0F5A40] hover:bg-[#0F5A40]/80 disabled:bg-[#0F5A40]/50 text-white font-semibold py-3 px-6 rounded-lg transition duration-200 shadow-md hover:shadow-lg disabled:cursor-not-allowed"
+            className="w-full bg-[#000000] hover:bg-[#000000]/80 disabled:bg-[#000000]/50 text-white font-semibold py-3 px-6 rounded-lg transition duration-200 shadow-md hover:shadow-lg disabled:cursor-not-allowed"
           >
             {loading ? "Connexion..." : "Se connecter"}
           </button>

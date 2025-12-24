@@ -69,7 +69,7 @@ export function ConfirmationModal({
                 : 'bg-[#038544] hover:bg-[#026a36] text-white'
             }`}
           >
-            {isLoading ? 'Suppression...' : confirmText}
+            {isLoading ? 'Déconnexion...' : confirmText}
           </Button>
         </DialogFooter>
       </DialogContent>

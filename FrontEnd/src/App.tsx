@@ -4,27 +4,23 @@ import AdminLayout from "./components/Layout/adminLayout";
 import { Spinner } from "./components/ui/spinner";
 import { AuthProvider } from "./contexts/AuthProvider";
 import { useAuth } from "./contexts/AuthContext";
-
+import { getDefaultRouteForRole } from "./lib/utils";
 import Dashboard from "./pages/Dashboard";
-import Devices from "./pages/Devices";
-import Reports from "./pages/Reports";
-import Products from "./pages/Products";
-import Merchs from "./pages/Merchs";
-import Clients from "./pages/Clients";
-import Missions from "./pages/Missions";
-import Routess from "./pages/Routess";
-import Map from "./pages/Map";
-import Reclamations from "./pages/Reclamations";
+import AddContact from "./pages/AddContact";
+import { useNavigate } from "react-router-dom";
+import type { User } from "./types/auth";
 
 const Login = lazy(() => import("./pages/Login"));
 
 function AppContent() {
   const { user, loading, logout } = useAuth();
 
-  const handleLogin = () => {
-    window.location.href = "/dashboard";
+  const navigate = useNavigate();
+
+  const handleLogin = (user: User) => {
+    navigate(getDefaultRouteForRole(user.role), { replace: true });
   };
-  
+
   const handleLogout = async () => {
     console.log("👋 Logout");
     await logout();
@@ -46,161 +42,65 @@ function AppContent() {
         </div>
       }
     >
-        <Routes>
-          <Route
-            path="/"
-            element={
-              user ? (
-                <Navigate to="/dashboard" replace />
-              ) : (
-                <Navigate to="/login" replace />
-              )
-            }
-          />
+      <Routes>
+        <Route
+          path="/"
+          element={
+            user ? (
+              <Navigate to={getDefaultRouteForRole(user.role)} replace />
+            ) : (
+              <Navigate to="/login" replace />
+            )
+          }
+        />
 
-          <Route
-            path="/login"
-            element={
-              user ? (
-                <Navigate to="/dashboard" replace />
-              ) : (
-                <Login onLoginSuccess={handleLogin} />
-              )
-            }
-          />
+        <Route
+          path="/login"
+          element={
+            user ? (
+              <Navigate to="/" replace />
+            ) : (
+              <Login onLoginSuccess={handleLogin} />
+            )
+          }
+        />
 
-          <Route
-            path="/dashboard"
-            element={
-              user ? (
-                <AdminLayout user={user} onLogout={handleLogout} pageTitle="Tableau de bord">
-                  <Dashboard />
-                </AdminLayout>
-              ) : (
-                <Navigate to="/login" replace />
-              )
-            }
-          />
+        <Route
+          path="/dashboard"
+          element={
+            user && (user.role === "admin" || user.role === "chef") ? (
+              <AdminLayout
+                user={user}
+                onLogout={handleLogout}
+                pageTitle="Tableau de bord"
+              >
+                <Dashboard />
+              </AdminLayout>
+            ) : (
+              <Navigate to={getDefaultRouteForRole(user?.role)} replace />
+            )
+          }
+        />
 
-          <Route
-            path="/devices"
-            element={
-              user ? (
-                <AdminLayout user={user} onLogout={handleLogout} pageTitle="Appareils">
-                  <Devices />
-                </AdminLayout>
-              ) : (
-                <Navigate to="/login" replace />
-              )
-            }
-          />
-
-          <Route
-            path="/reports"
-            element={
-              user ? (
-                <AdminLayout user={user} onLogout={handleLogout} pageTitle="Rapports">
-                  <Reports />
-                </AdminLayout>
-              ) : (
-                <Navigate to="/login" replace />
-              )
-            }
-          />
-
-          <Route
-            path="/products"
-            element={
-              user ? (
-                <AdminLayout user={user} onLogout={handleLogout} pageTitle="Produits">
-                  <Products />
-                </AdminLayout>
-              ) : (
-                <Navigate to="/login" replace />
-              )
-            }
-          />
-
-          <Route
-            path="/merchs"
-            element={
-              user ? (
-                <AdminLayout user={user} onLogout={handleLogout} pageTitle="Marchandiseurs">
-                  <Merchs />
-                </AdminLayout>
-              ) : (
-                <Navigate to="/login" replace />
-              )
-            }
-          />
-
-          <Route
-            path="/clients"
-            element={
-              user ? (
-                <AdminLayout user={user} onLogout={handleLogout} pageTitle="Clients">
-                  <Clients />
-                </AdminLayout>
-              ) : (
-                <Navigate to="/login" replace />
-              )
-            }
-          />
-
-          <Route
-            path="/missions"
-            element={
-              user ? (
-                <AdminLayout user={user} onLogout={handleLogout} pageTitle="Missions">
-                  <Missions />
-                </AdminLayout>
-              ) : (
-                <Navigate to="/login" replace />
-              )
-            }
-          />
-
-          <Route
-            path="/routess"
-            element={
-              user ? (
-                <AdminLayout user={user} onLogout={handleLogout} pageTitle="Routes">
-                  <Routess />
-                </AdminLayout>
-              ) : (
-                <Navigate to="/login" replace />
-              )
-            }
-          />
-
-          <Route
-            path="/map"
-            element={
-              user ? (
-                <AdminLayout user={user} onLogout={handleLogout} pageTitle="Map">
-                  <Map />
-                </AdminLayout>
-              ) : (
-                <Navigate to="/login" replace />
-              )
-            }
-          />
-
-          <Route
-            path="/reclamations"
-            element={
-              user ? (
-                <AdminLayout user={user} onLogout={handleLogout} pageTitle="Réclamations">
-                  <Reclamations />
-                </AdminLayout>
-              ) : (
-                <Navigate to="/login" replace />
-              )
-            }
-          />
-        </Routes>
-      </Suspense>
-    );
+        <Route
+          path="/addcontacts"
+          element={
+            user ? (
+              <AdminLayout
+                user={user}
+                onLogout={handleLogout}
+                pageTitle="Ajouter un contact"
+              >
+                <AddContact />
+              </AdminLayout>
+            ) : (
+              <Navigate to="/login" replace />
+            )
+          }
+        />
+      </Routes>
+    </Suspense>
+  );
 }
 
 export default function App() {
