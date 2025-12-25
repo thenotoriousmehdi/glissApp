@@ -70,6 +70,11 @@ function getNavigationSections(role?: string): NavSection[] {
             url: "/contacts",
             icon: ContractsIcon,
           },
+            {
+            title: "Rendement",
+            url: "/rendement-admin",
+            icon: ProductLoadingIcon,
+          },
         ],
       },
     ];

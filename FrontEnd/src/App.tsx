@@ -8,6 +8,7 @@ import { getDefaultRouteForRole } from "./lib/utils";
 import Dashboard from "./pages/Dashboard";
 import Rendement from "./pages/Rendement";
 import Rotation from "./pages/Rotation";
+import RendementAdmin from "./pages/RendementAdmin";
 import AddContact from "./pages/AddContact";
 import Contacts from "./pages/Contacts";
 import DashboardAdmin from "./pages/DashboardAdmin";
@@ -99,6 +100,23 @@ function AppContent() {
                 pageTitle="Contacts"
               >
                 <Contacts />
+              </AdminLayout>
+            ) : (
+              <Navigate to={getDefaultRouteForRole(user?.role)} replace />
+            )
+          }
+        />
+
+        <Route
+          path="/rendement-admin"
+          element={
+            user && (user.role === "admin") ? (
+              <AdminLayout
+                user={user}
+                onLogout={handleLogout}
+                pageTitle="Rendement"
+              >
+                <RendementAdmin />
               </AdminLayout>
             ) : (
               <Navigate to={getDefaultRouteForRole(user?.role)} replace />
