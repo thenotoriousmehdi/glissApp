@@ -95,7 +95,7 @@ export default function RendementAdmin() {
         <div className="mb-6">
           <h1 className="text-2xl font-semibold text-black">Rendement</h1>
           <p className="text-sm text-black/60">
-            Statistiques des animateurs (contacts + échantillons).
+            Statistiques des animateurs.
           </p>
         </div>
 

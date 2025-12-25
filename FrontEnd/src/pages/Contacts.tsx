@@ -122,7 +122,7 @@ export default function Contacts() {
         <div className="mb-6">
           <h1 className="text-2xl font-semibold text-black">Contacts</h1>
           <p className="text-sm text-black/60">
-            Liste des contacts (admin) avec animateur et superviseur.
+            Liste des contacts.
           </p>
         </div>
 
