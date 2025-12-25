@@ -21,6 +21,8 @@ import {
   Add01Icon,
   Logout02Icon,
   UserCircle02Icon,
+  ContractsIcon,
+  ProductLoadingIcon
 } from "hugeicons-react";
 
 import { useLocation, useNavigate } from "react-router-dom";
@@ -53,7 +55,7 @@ function getNavigationSections(role?: string): NavSection[] {
     ];
   }
 
-  if (normalizedRole === "chef" || normalizedRole === "admin") {
+  if (normalizedRole === "admin") {
     return [
       {
         items: [
@@ -62,6 +64,31 @@ function getNavigationSections(role?: string): NavSection[] {
             url: "/dashboard",
             icon: DashboardSquare01Icon,
           },
+          {
+            title: "Contacts",
+            url: "/contacts",
+            icon: ContractsIcon,
+          },
+        ],
+      },
+    ];
+  }
+  if (normalizedRole === "chef") {
+    return [
+      {
+        items: [
+          {
+            title: "Tableau de bord",
+            url: "/dashboard",
+            icon: DashboardSquare01Icon,
+          },
+           {
+            title: "Rendement",
+            url: "/rendement",
+            icon: ProductLoadingIcon,
+          },
+          
+          
         ],
       },
     ];

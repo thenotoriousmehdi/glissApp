@@ -24,6 +24,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     (async () => {
       try {
+        if (!authApi.getAccessToken()) {
+          if (mounted) setUser(null);
+          return;
+        }
         const me = await authApi.getMe();
         if (mounted) setUser(me);
       } catch {

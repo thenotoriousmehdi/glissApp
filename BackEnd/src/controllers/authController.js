@@ -52,37 +52,15 @@ export const login = async (req, res) => {
         expires_at: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000),
       },
     });
-    
 
-    // Detect if running on Railway or production
-    const isProduction = process.env.NODE_ENV === "production" || process.env.RAILWAY_ENVIRONMENT_NAME;
-  
-
-    const cookieOptions = {
-      httpOnly: true,
-      secure: isProduction,
-      sameSite: isProduction ? "none" : "lax",
-      path: '/', 
-    };
-    
-    // Set cookies
-    res.cookie("access_token", accessToken, {
-      ...cookieOptions,
-      maxAge: 15 * 60 * 1000, // 15 minutes
-    });
-    
-    res.cookie("refresh_token", refreshToken, {
-      ...cookieOptions,
-      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
-    });
-    
-    
     // Send user info (excluding password)
     const { password_hash: _, ...safeUser } = user;
     
     res.json({
       message: "Login successful",
       user: safeUser,
+      accessToken,
+      refreshToken,
     });
   } catch (error) {
     const isProduction = process.env.NODE_ENV === "production" || process.env.RAILWAY_ENVIRONMENT_NAME;
@@ -98,7 +76,7 @@ export const login = async (req, res) => {
 
 export const refresh = async (req, res) => {
   try {
-    const token = req.cookies.refresh_token;
+    const token = req.body?.refreshToken || req.cookies?.refresh_token;
     
     if (!token) {
       return res.status(401).json({ error: "No refresh token" });
@@ -135,21 +113,8 @@ export const refresh = async (req, res) => {
     }
     
     const newAccess = generateAccessToken(user);
-    
-    // Detect if running on Railway or production
-    const isProduction = process.env.NODE_ENV === "production" || process.env.RAILWAY_ENVIRONMENT_NAME;
-    
-    // Update cookie
-    res.cookie("access_token", newAccess, {
-      httpOnly: true,
-      secure: isProduction,
-      sameSite: isProduction ? "none" : "lax",
-      path: '/', 
-      maxAge: 15 * 60 * 1000,
-      
-    });
-    
-    res.json({ message: "Access token refreshed" });
+
+    res.json({ message: "Access token refreshed", accessToken: newAccess });
   } catch (err) {
     res.status(403).json({ error: "Refresh failed" });
   }
@@ -157,26 +122,9 @@ export const refresh = async (req, res) => {
   
 export const logout = async (req, res) => {
   try {
-    const token = req.cookies.refresh_token;
+    const token = req.body?.refreshToken || req.cookies?.refresh_token;
     if (token) await prisma.refresh_tokens.deleteMany({ where: { token } });
 
-    const isProduction = process.env.NODE_ENV === "production" || process.env.RAILWAY_ENVIRONMENT_NAME;
-    
-    // Clear cookies with same options they were set with
-    res.clearCookie("access_token", {
-      httpOnly: true,
-      secure: isProduction,
-      sameSite: isProduction ? "none" : "lax",
-      path: '/',
-    });
-    
-    res.clearCookie("refresh_token", {
-      httpOnly: true,
-      secure: isProduction,
-      sameSite: isProduction ? "none" : "lax",
-      path: '/',
-    });
-    
     res.json({ message: "Logged out" });
   } catch (error) {
     console.error('Logout error:', error);

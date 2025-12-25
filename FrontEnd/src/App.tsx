@@ -6,6 +6,7 @@ import { AuthProvider } from "./contexts/AuthProvider";
 import { useAuth } from "./contexts/AuthContext";
 import { getDefaultRouteForRole } from "./lib/utils";
 import Dashboard from "./pages/Dashboard";
+import Rendement from "./pages/Rendement";
 import AddContact from "./pages/AddContact";
 import { useNavigate } from "react-router-dom";
 import type { User } from "./types/auth";
@@ -81,6 +82,25 @@ function AppContent() {
             )
           }
         />
+
+
+        <Route
+          path="/rendement"
+          element={
+            user && (user.role === "chef") ? (
+              <AdminLayout
+                user={user}
+                onLogout={handleLogout}
+                pageTitle="Rendement"
+              >
+                <Rendement />
+              </AdminLayout>
+            ) : (
+              <Navigate to={getDefaultRouteForRole(user?.role)} replace />
+            )
+          }
+        />
+
 
         <Route
           path="/addcontacts"

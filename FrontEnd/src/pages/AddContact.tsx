@@ -135,7 +135,16 @@ export default function AddContact() {
     setError("");
     setSuccess("");
 
-    if (!firstName || !lastName || !phoneNumber || !address || !wilaya || !commune || !activationSector) {
+    if (
+      !firstName ||
+      !lastName ||
+      !phoneNumber ||
+      !address ||
+      !wilaya ||
+      !commune ||
+      !activationSector ||
+      !samplesGiven
+    ) {
       setError("Veuillez remplir tous les champs obligatoires.");
       return;
     }
@@ -151,8 +160,8 @@ export default function AddContact() {
       selected_option: answers[q.id],
     }));
 
-    const samplesNumber = samplesGiven.trim() === "" ? undefined : Number(samplesGiven);
-    if (samplesNumber !== undefined && Number.isNaN(samplesNumber)) {
+    const samplesNumber = Number(samplesGiven);
+    if (Number.isNaN(samplesNumber)) {
       setError("Le champ 'Nombre d’échantillons' doit être un nombre.");
       return;
     }

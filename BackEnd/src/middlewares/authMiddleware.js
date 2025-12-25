@@ -3,12 +3,15 @@ import jwt from "jsonwebtoken";
 const ACCESS_SECRET = process.env.JWT_ACCESS_SECRET || "accesssecret";
 
 export default function authMiddleware(req, res, next) {
-  const token = req.cookies.access_token;
-  
+  const authHeader = req.headers.authorization;
+  const headerToken =
+    typeof authHeader === "string" && authHeader.toLowerCase().startsWith("bearer ")
+      ? authHeader.slice(7)
+      : null;
 
-  
+  const token = headerToken || req.cookies?.access_token;
+
   if (!token) {
-  
     return res.status(401).json({ error: "Unauthorized - No token provided" });
   }
   
@@ -18,8 +21,6 @@ export default function authMiddleware(req, res, next) {
 
     next();
   } catch (error) {
-  
-    
     if (error.name === 'TokenExpiredError') {
       return res.status(401).json({ 
         error: "Token expired",

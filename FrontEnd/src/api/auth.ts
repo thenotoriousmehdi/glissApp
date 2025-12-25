@@ -3,6 +3,27 @@ import type { User } from "../types/auth";
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:3000";
 
+const ACCESS_TOKEN_KEY = "gliss_access_token";
+const REFRESH_TOKEN_KEY = "gliss_refresh_token";
+
+export function getAccessToken(): string | null {
+  return localStorage.getItem(ACCESS_TOKEN_KEY);
+}
+
+export function getRefreshToken(): string | null {
+  return localStorage.getItem(REFRESH_TOKEN_KEY);
+}
+
+function setTokens(accessToken: string, refreshToken: string) {
+  localStorage.setItem(ACCESS_TOKEN_KEY, accessToken);
+  localStorage.setItem(REFRESH_TOKEN_KEY, refreshToken);
+}
+
+export function clearTokens() {
+  localStorage.removeItem(ACCESS_TOKEN_KEY);
+  localStorage.removeItem(REFRESH_TOKEN_KEY);
+}
+
 
 export async function login(username: string, password: string): Promise<User> {
   const response = await fetch(`${API_BASE_URL}/auth/login`, {
@@ -10,7 +31,6 @@ export async function login(username: string, password: string): Promise<User> {
     headers: {
       "Content-Type": "application/json",
     },
-    credentials: "include", 
     body: JSON.stringify({ username, password }),
   });
 
@@ -20,15 +40,24 @@ export async function login(username: string, password: string): Promise<User> {
   }
 
   const data = await response.json();
+  if (data?.accessToken && data?.refreshToken) {
+    setTokens(data.accessToken, data.refreshToken);
+  }
   return data.user;
 }
 
 
 export async function logout(): Promise<void> {
+  const refreshToken = getRefreshToken();
   const response = await fetch(`${API_BASE_URL}/auth/logout`, {
     method: "POST",
-    credentials: "include",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ refreshToken }),
   });
+
+  clearTokens();
 
   if (!response.ok) {
     throw new Error("Logout failed");
@@ -37,10 +66,17 @@ export async function logout(): Promise<void> {
 
 
 export async function refreshAccessToken(): Promise<void> {
-  
+  const refreshToken = getRefreshToken();
+  if (!refreshToken) {
+    throw new Error("No refresh token");
+  }
+
   const response = await fetch(`${API_BASE_URL}/auth/refresh`, {
     method: "POST",
-    credentials: "include",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ refreshToken }),
   });
 
 
@@ -51,7 +87,9 @@ export async function refreshAccessToken(): Promise<void> {
   }
 
   const data = await response.json();
-  return data.message;
+  if (data?.accessToken) {
+    localStorage.setItem(ACCESS_TOKEN_KEY, data.accessToken);
+  }
 }
 
 
@@ -60,7 +98,6 @@ export async function getMe(): Promise<User> {
   
   const response = await authenticatedFetch("/auth/me", {
     method: "GET",
-    credentials: "include",
   });
 
   if (!response.ok) {
@@ -81,11 +118,12 @@ export async function authenticatedFetch(
     ? endpoint
     : `${API_BASE_URL}${endpoint}`;
 
+  const accessToken = getAccessToken();
   const response = await fetch(url, {
     ...options,
-    credentials: "include",
     headers: {
       "Content-Type": "application/json",
+      ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
       ...options.headers,
     },
   });
@@ -94,18 +132,19 @@ export async function authenticatedFetch(
   if (response.status === 401 && !options._retried) {
     try {
       await refreshAccessToken();
+      const newAccessToken = getAccessToken();
       const retryOptions = {
         ...options,
         _retried: true,
-        credentials: "include" as const,
         headers: {
           "Content-Type": "application/json",
+          ...(newAccessToken ? { Authorization: `Bearer ${newAccessToken}` } : {}),
           ...options.headers,
         },
       };
       return fetch(url, retryOptions as RequestInit);
     } catch (err) {
-
+      clearTokens();
       throw new Error("Session expired");
     }
   }
