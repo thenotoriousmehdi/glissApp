@@ -62,7 +62,7 @@ function getNavigationSections(role?: string): NavSection[] {
         items: [
           {
             title: "Tableau de bord",
-            url: "/dashboard",
+            url: "/dashboard-admin",
             icon: DashboardSquare01Icon,
           },
           {

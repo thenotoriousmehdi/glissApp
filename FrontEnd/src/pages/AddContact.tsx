@@ -149,6 +149,9 @@ export default function AddContact() {
       return;
     }
 
+    const selectedWilayaName =
+      wilayaOptions.find((w) => w.code === wilaya)?.name || wilaya;
+
     const missingQuestion = questions.find((q) => !answers[q.id]);
     if (missingQuestion) {
       setError("Veuillez répondre à toutes les questions.");
@@ -176,7 +179,7 @@ export default function AddContact() {
           phone_number: phoneNumber,
           address,
           commune,
-          wilaya,
+          wilaya: selectedWilayaName,
           activation_sector: activationSector,
           samples_given: samplesNumber,
           answers: answerPayload,

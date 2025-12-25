@@ -10,6 +10,7 @@ export function getDefaultRouteForRole(role?: string) {
     case "animator":
       return "/addcontacts"
     case "admin":
+      return "/dashboard-admin"
     case "chef":
       return "/dashboard"
     default:

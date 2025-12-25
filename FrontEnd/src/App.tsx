@@ -9,6 +9,8 @@ import Dashboard from "./pages/Dashboard";
 import Rendement from "./pages/Rendement";
 import Rotation from "./pages/Rotation";
 import AddContact from "./pages/AddContact";
+import Contacts from "./pages/Contacts";
+import DashboardAdmin from "./pages/DashboardAdmin";
 import { useNavigate } from "react-router-dom";
 import type { User } from "./types/auth";
 
@@ -67,10 +69,47 @@ function AppContent() {
           }
         />
 
+
+
+        <Route
+          path="/dashboard-admin"
+          element={
+            user && (user.role === "admin") ? (
+              <AdminLayout
+                user={user}
+                onLogout={handleLogout}
+                pageTitle="Tableau de bord"
+              >
+                <DashboardAdmin />
+              </AdminLayout>
+            ) : (
+              <Navigate to={getDefaultRouteForRole(user?.role)} replace />
+            )
+          }
+        />
+        
+
+        <Route
+          path="/contacts"
+          element={
+            user && (user.role === "admin") ? (
+              <AdminLayout
+                user={user}
+                onLogout={handleLogout}
+                pageTitle="Contacts"
+              >
+                <Contacts />
+              </AdminLayout>
+            ) : (
+              <Navigate to={getDefaultRouteForRole(user?.role)} replace />
+            )
+          }
+        />
+
         <Route
           path="/dashboard"
           element={
-            user && (user.role === "admin" || user.role === "chef") ? (
+            user && (user.role === "chef") ? (
               <AdminLayout
                 user={user}
                 onLogout={handleLogout}
@@ -124,7 +163,7 @@ function AppContent() {
         <Route
           path="/addcontacts"
           element={
-            user ? (
+            user && (user.role === "animator") ? (
               <AdminLayout
                 user={user}
                 onLogout={handleLogout}
@@ -133,7 +172,7 @@ function AppContent() {
                 <AddContact />
               </AdminLayout>
             ) : (
-              <Navigate to="/login" replace />
+               <Navigate to={getDefaultRouteForRole(user?.role)} replace />
             )
           }
         />
