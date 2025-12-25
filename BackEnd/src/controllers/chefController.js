@@ -42,6 +42,92 @@ export const listChefAnimators = async (req, res) => {
   }
 };
 
+export const getChefDashboardStats = async (req, res) => {
+  try {
+    const chefId = req.user?.userId;
+    const { date } = req.query;
+
+    if (!chefId) {
+      return res.status(401).json({ error: "Unauthorized" });
+    }
+
+    const chef = await prisma.users.findUnique({ where: { id: chefId } });
+    if (!chef || chef.role !== "chef") {
+      return res
+        .status(403)
+        .json({ error: "Unauthorized: Chef access required" });
+    }
+
+    const dateFilter = {};
+    if (date) {
+      const selectedDate = new Date(String(date));
+      if (Number.isNaN(selectedDate.getTime())) {
+        return res.status(400).json({ error: "Invalid date" });
+      }
+
+      const nextDay = new Date(selectedDate);
+      nextDay.setDate(nextDay.getDate() + 1);
+
+      dateFilter.gte = selectedDate;
+      dateFilter.lt = nextDay;
+    }
+
+    const hasDateFilter = Object.keys(dateFilter).length > 0;
+
+    const animatorIds = await prisma.animators.findMany({
+      where: { chef_id: chefId },
+      select: { id: true },
+    });
+
+    const ids = animatorIds.map((a) => a.id);
+    if (ids.length === 0) {
+      return res.status(200).json({
+        success: true,
+        filters: { date: date || null },
+        totals: {
+          totalContacts: 0,
+          totalSamplesGivenToContacts: 0,
+          totalSamplesDistributedToAnimators: 0,
+        },
+      });
+    }
+
+    const contactsAgg = await prisma.contacts.aggregate({
+      where: {
+        animator_id: { in: ids },
+        ...(hasDateFilter ? { submitted_at: dateFilter } : {}),
+      },
+      _count: { _all: true },
+      _sum: { samples_given: true },
+    });
+
+    const inventoryAgg = await prisma.inventory.aggregate({
+      where: {
+        chef_id: chefId,
+        animator_id: { in: ids },
+        ...(hasDateFilter ? { created_at: dateFilter } : {}),
+      },
+      _sum: { quantity: true },
+    });
+
+    return res.status(200).json({
+      success: true,
+      filters: { date: date || null },
+      totals: {
+        totalContacts: contactsAgg._count?._all || 0,
+        totalSamplesGivenToContacts: contactsAgg._sum?.samples_given || 0,
+        totalSamplesDistributedToAnimators: inventoryAgg._sum?.quantity || 0,
+      },
+    });
+  } catch (error) {
+    console.error("Error fetching chef dashboard stats:", error);
+    return res.status(500).json({
+      success: false,
+      error: "Failed to fetch dashboard statistics",
+    });
+  }
+};
+
 export const getAnimatorsStats = async (req, res) => {
   try {
     const chefId = req.user?.userId;

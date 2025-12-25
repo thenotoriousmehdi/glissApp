@@ -3,6 +3,7 @@ import express from "express";
 import authMiddleware from "../middlewares/authMiddleware.js";
 import {
   createInventoryEntry,
+  getChefDashboardStats,
   getAnimatorsStats,
   listChefAnimators,
 } from "../controllers/chefController.js";
@@ -10,6 +11,7 @@ import {
 const router = express.Router();
 
 router.get("/animators", authMiddleware, listChefAnimators);
+router.get("/dashboard-stats", authMiddleware, getChefDashboardStats);
 router.get("/animators-stats", authMiddleware, getAnimatorsStats);
 router.post("/inventory", authMiddleware, createInventoryEntry);
 
