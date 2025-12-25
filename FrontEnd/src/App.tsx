@@ -7,6 +7,7 @@ import { useAuth } from "./contexts/AuthContext";
 import { getDefaultRouteForRole } from "./lib/utils";
 import Dashboard from "./pages/Dashboard";
 import Rendement from "./pages/Rendement";
+import Rotation from "./pages/Rotation";
 import AddContact from "./pages/AddContact";
 import { useNavigate } from "react-router-dom";
 import type { User } from "./types/auth";
@@ -94,6 +95,24 @@ function AppContent() {
                 pageTitle="Rendement"
               >
                 <Rendement />
+              </AdminLayout>
+            ) : (
+              <Navigate to={getDefaultRouteForRole(user?.role)} replace />
+            )
+          }
+        />
+
+
+        <Route
+          path="/rotation"
+          element={
+            user && (user.role === "chef") ? (
+              <AdminLayout
+                user={user}
+                onLogout={handleLogout}
+                pageTitle="Rotation"
+              >
+                <Rotation />
               </AdminLayout>
             ) : (
               <Navigate to={getDefaultRouteForRole(user?.role)} replace />

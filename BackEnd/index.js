@@ -6,6 +6,7 @@ import cors from "cors";
 import authRoutes from "./src/routes/authRoutes.js";
 import contactRoutes from "./src/routes/contactRoutes.js";
 import questionRoutes from "./src/routes/questionRoutes.js";
+import chefRoutes from "./src/routes/chefRoutes.js";
 import prisma from "./lib/prisma.js";
 
 dotenv.config();
@@ -44,6 +45,7 @@ app.use(express.json());
 app.use("/auth", authRoutes);
 app.use("/contacts", contactRoutes);
 app.use("/questions", questionRoutes);
+app.use("/chef", chefRoutes);
 app.get("/", (req, res) => {
   res.send("API is running");
 });

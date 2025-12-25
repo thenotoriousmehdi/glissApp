@@ -22,6 +22,7 @@ import {
   Logout02Icon,
   UserCircle02Icon,
   ContractsIcon,
+  PackageMovingIcon,
   ProductLoadingIcon
 } from "hugeicons-react";
 
@@ -87,6 +88,13 @@ function getNavigationSections(role?: string): NavSection[] {
             url: "/rendement",
             icon: ProductLoadingIcon,
           },
+          
+           {
+            title: "Rotation",
+            url: "/rotation",
+            icon: PackageMovingIcon,
+          },
+          
           
           
         ],

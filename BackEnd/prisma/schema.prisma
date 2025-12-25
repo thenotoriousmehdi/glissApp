@@ -69,15 +69,12 @@ model inventory {
   animator_id      String?    @db.Uuid
   chef_id          String?    @db.Uuid
   quantity         Int
-  notes            String?
-  transaction_date DateTime?  @default(now()) @db.Timestamptz(6)
   created_at       DateTime?  @default(now()) @db.Timestamptz(6)
   animators        animators? @relation(fields: [animator_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
   users            users?     @relation(fields: [chef_id], references: [id], onUpdate: NoAction)
 
   @@index([animator_id], map: "idx_inventory_animator_id")
   @@index([chef_id], map: "idx_inventory_chef_id")
-  @@index([transaction_date], map: "idx_inventory_transaction_date")
 }
 
 model questions {
