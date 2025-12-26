@@ -18,7 +18,7 @@ export const submitContactWithAnswers = async (req, res) => {
       return res.status(401).json({ error: "Unauthorized" });
     }
 
-    if (!first_name || !last_name || !phone_number || !address || !commune || !wilaya || !activation_sector) {
+    if (!first_name || !last_name || !phone_number || !address) {
       return res.status(400).json({ error: "Missing required contact fields" });
     }
 
@@ -36,6 +36,26 @@ export const submitContactWithAnswers = async (req, res) => {
     const animator = await prisma.animators.findFirst({ where: { user_id: req.user.userId } });
     if (!animator) {
       return res.status(403).json({ error: "No animator profile linked to this user" });
+    }
+
+    const currentSettings = await prisma.animator_current_settings.findUnique({
+      where: { animator_id: animator.id },
+      select: {
+        wilaya_name: true,
+        commune: true,
+        activation_sector: true,
+      },
+    });
+
+    const finalWilaya = wilaya || currentSettings?.wilaya_name;
+    const finalCommune = commune || currentSettings?.commune;
+    const finalActivationSector = activation_sector || currentSettings?.activation_sector;
+
+    if (!finalWilaya || !finalCommune || !finalActivationSector) {
+      return res.status(400).json({
+        error:
+          "Missing required zone fields. Please set 'Zone et type actuelles' first or provide wilaya/commune/activation_sector.",
+      });
     }
 
     const questionIds = [...new Set(answers.map((a) => a.question_id))];
@@ -56,9 +76,9 @@ export const submitContactWithAnswers = async (req, res) => {
           last_name,
           phone_number,
           address,
-          commune,
-          wilaya,
-          activation_sector,
+          commune: finalCommune,
+          wilaya: finalWilaya,
+          activation_sector: finalActivationSector,
           samples_given: typeof samples_given === "number" ? samples_given : undefined,
         },
       });

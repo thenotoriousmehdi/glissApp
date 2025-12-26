@@ -26,6 +26,14 @@ type AnswerPayload = {
   selected_option: string;
 };
 
+type AnimatorCurrentSettings = {
+  wilaya_code: string;
+  wilaya_name: string;
+  commune: string;
+  activation_sector: string;
+  updated_at?: string;
+};
+
 const sectorOptions = [
   "Spa / Hammam",
   "Entreprise / Bureaux (At Work)",
@@ -57,10 +65,14 @@ export default function AddContact() {
   const [lastName, setLastName] = useState("");
   const [phoneNumber, setPhoneNumber] = useState("");
   const [address, setAddress] = useState("");
-  const [wilaya, setWilaya] = useState("");
-  const [commune, setCommune] = useState("");
-  const [activationSector, setActivationSector] = useState("");
   const [samplesGiven, setSamplesGiven] = useState<string>("");
+
+  const [currentSettings, setCurrentSettings] = useState<AnimatorCurrentSettings | null>(null);
+  const [settingsWilayaCode, setSettingsWilayaCode] = useState<string>("");
+  const [settingsCommune, setSettingsCommune] = useState<string>("");
+  const [settingsActivationSector, setSettingsActivationSector] = useState<string>("");
+  const [loadingSettings, setLoadingSettings] = useState(true);
+  const [savingSettings, setSavingSettings] = useState(false);
 
   const [questions, setQuestions] = useState<Question[]>([]);
   const [answers, setAnswers] = useState<Record<string, string>>({});
@@ -83,19 +95,46 @@ export default function AddContact() {
 
   const communeOptions = useMemo(() => {
     const rows = cities as CityRow[];
-    if (!wilaya) return [] as { id: number; name: string }[];
-    const filtered = rows.filter((r) => r.wilaya_code === wilaya);
+    if (!settingsWilayaCode) return [] as { id: number; name: string }[];
+    const filtered = rows.filter((r) => r.wilaya_code === settingsWilayaCode);
     const map = new Map<string, { id: number; name: string }>();
     for (const r of filtered) {
       const key = r.commune_name_ascii;
       if (!map.has(key)) map.set(key, { id: r.id, name: r.commune_name_ascii });
     }
     return [...map.values()].sort((a, b) => a.name.localeCompare(b.name));
-  }, [wilaya]);
+  }, [settingsWilayaCode]);
 
   useEffect(() => {
-    setCommune("");
-  }, [wilaya]);
+    let mounted = true;
+    (async () => {
+      setLoadingSettings(true);
+      try {
+        const res = await authenticatedFetch("/animator/current-settings", {
+          method: "GET",
+        });
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({}));
+          throw new Error(err.error || "Failed to load current settings");
+        }
+        const data = (await res.json()) as { settings: AnimatorCurrentSettings | null };
+        if (!mounted) return;
+        setCurrentSettings(data.settings);
+        setSettingsWilayaCode(data.settings?.wilaya_code || "");
+        setSettingsCommune(data.settings?.commune || "");
+        setSettingsActivationSector(data.settings?.activation_sector || "");
+      } catch {
+        if (mounted) {
+          setCurrentSettings(null);
+        }
+      } finally {
+        if (mounted) setLoadingSettings(false);
+      }
+    })();
+    return () => {
+      mounted = false;
+    };
+  }, []);
 
   useEffect(() => {
     let mounted = true;
@@ -140,17 +179,16 @@ export default function AddContact() {
       !lastName ||
       !phoneNumber ||
       !address ||
-      !wilaya ||
-      !commune ||
-      !activationSector ||
       !samplesGiven
     ) {
       setError("Veuillez remplir tous les champs obligatoires.");
       return;
     }
 
-    const selectedWilayaName =
-      wilayaOptions.find((w) => w.code === wilaya)?.name || wilaya;
+    if (!currentSettings) {
+      setError("Veuillez définir d’abord la section 'Zone et type actuelles'.");
+      return;
+    }
 
     const missingQuestion = questions.find((q) => !answers[q.id]);
     if (missingQuestion) {
@@ -178,9 +216,6 @@ export default function AddContact() {
           last_name: lastName,
           phone_number: phoneNumber,
           address,
-          commune,
-          wilaya: selectedWilayaName,
-          activation_sector: activationSector,
           samples_given: samplesNumber,
           answers: answerPayload,
         }),
@@ -196,15 +231,63 @@ export default function AddContact() {
       setLastName("");
       setPhoneNumber("");
       setAddress("");
-      setWilaya("");
-      setCommune("");
-      setActivationSector("");
       setSamplesGiven("");
       setAnswers({});
     } catch (e) {
       setError(e instanceof Error ? e.message : "Erreur lors de l’envoi");
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  const selectedSettingsWilayaName =
+    wilayaOptions.find((w) => w.code === settingsWilayaCode)?.name || "";
+
+  const handleSaveSettings = async () => {
+    setError("");
+    setSuccess("");
+
+    const patchPayload: Partial<AnimatorCurrentSettings> = {};
+
+    if (settingsWilayaCode && selectedSettingsWilayaName) {
+      patchPayload.wilaya_code = settingsWilayaCode;
+      patchPayload.wilaya_name = selectedSettingsWilayaName;
+    }
+
+    if (settingsCommune) {
+      patchPayload.commune = settingsCommune;
+    }
+
+    if (settingsActivationSector) {
+      patchPayload.activation_sector = settingsActivationSector;
+    }
+
+    if (Object.keys(patchPayload).length === 0) {
+      setError("Veuillez modifier au moins un champ de la zone actuelle.");
+      return;
+    }
+
+    setSavingSettings(true);
+    try {
+      const res = await authenticatedFetch("/animator/current-settings", {
+        method: "PATCH",
+        body: JSON.stringify(patchPayload),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error || "Échec de la mise à jour des paramètres");
+      }
+
+      const data = (await res.json()) as { settings: AnimatorCurrentSettings };
+      setCurrentSettings(data.settings);
+      setSettingsWilayaCode(data.settings.wilaya_code);
+      setSettingsCommune(data.settings.commune);
+      setSettingsActivationSector(data.settings.activation_sector);
+      setSuccess("Zone et type actuelles mis à jour.");
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Erreur lors de la mise à jour");
+    } finally {
+      setSavingSettings(false);
     }
   };
 
@@ -219,6 +302,89 @@ export default function AddContact() {
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-6">
+          <div className="rounded-xl border border-black/10 bg-white p-5">
+            <h2 className="text-sm font-semibold text-black mb-4">Zone et type actuelles</h2>
+
+            {loadingSettings ? (
+              <div className="text-sm text-black/60">Chargement...</div>
+            ) : (
+              <>
+                {!currentSettings && (
+                  <div className="mb-4 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+                    Veuillez définir la zone actuelle avant d’ajouter des contacts.
+                  </div>
+                )}
+
+                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                  <div>
+                    <label className="text-xs font-medium text-black/70">Wilaya</label>
+                    <select
+                      value={settingsWilayaCode}
+                      onChange={(e) => {
+                        setSettingsWilayaCode(e.target.value);
+                        setSettingsCommune("");
+                      }}
+                      className="border-input h-9 w-full rounded-md border bg-transparent px-3 py-1 text-sm shadow-xs outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]"
+                    >
+                      <option value="">Sélectionner...</option>
+                      {wilayaOptions.map((w) => (
+                        <option key={w.code} value={w.code}>
+                          {w.code} - {w.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="text-xs font-medium text-black/70">Commune</label>
+                    <select
+                      value={settingsCommune}
+                      onChange={(e) => setSettingsCommune(e.target.value)}
+                      disabled={!settingsWilayaCode}
+                      className="border-input h-9 w-full rounded-md border bg-transparent px-3 py-1 text-sm shadow-xs outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] disabled:opacity-50"
+                    >
+                      <option value="">Sélectionner...</option>
+                      {communeOptions.map((c) => (
+                        <option key={c.id} value={c.name}>
+                          {c.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 gap-4 md:grid-cols-2 mt-4">
+                  <div>
+                    <label className="text-xs font-medium text-black/70">Secteur d’activation</label>
+                    <select
+                      value={settingsActivationSector}
+                      onChange={(e) => setSettingsActivationSector(e.target.value)}
+                      className="border-input h-9 w-full rounded-md border bg-transparent px-3 py-1 text-sm shadow-xs outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]"
+                    >
+                      <option value="">Sélectionner...</option>
+                      {sectorOptions.map((s) => (
+                        <option key={s} value={s}>
+                          {s}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="flex items-end">
+                    <Button
+                      type="button"
+                      onClick={handleSaveSettings}
+                      disabled={savingSettings}
+                      className="bg-black text-white hover:bg-black/90"
+                    >
+                      {savingSettings ? "Enregistrement..." : "Mettre à jour"}
+                    </Button>
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
+
           <div className="rounded-xl border border-black/10 bg-white p-5">
             <h2 className="text-sm font-semibold text-black mb-4">Informations</h2>
 
@@ -243,56 +409,6 @@ export default function AddContact() {
 
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2 mt-4">
               <div>
-                <label className="text-xs font-medium text-black/70">Wilaya *</label>
-                <select
-                  value={wilaya}
-                  onChange={(e) => setWilaya(e.target.value)}
-                  className="border-input h-9 w-full rounded-md border bg-transparent px-3 py-1 text-sm shadow-xs outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]"
-                >
-                  <option value="">Sélectionner...</option>
-                  {wilayaOptions.map((w) => (
-                    <option key={w.code} value={w.code}>
-                      {w.code} - {w.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <label className="text-xs font-medium text-black/70">Commune *</label>
-                <select
-                  value={commune}
-                  onChange={(e) => setCommune(e.target.value)}
-                  disabled={!wilaya}
-                  className="border-input h-9 w-full rounded-md border bg-transparent px-3 py-1 text-sm shadow-xs outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] disabled:opacity-50"
-                >
-                  <option value="">Sélectionner...</option>
-                  {communeOptions.map((c) => (
-                    <option key={c.id} value={c.name}>
-                      {c.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-2 mt-4">
-              <div>
-                <label className="text-xs font-medium text-black/70">Secteur d’activation *</label>
-                <select
-                  value={activationSector}
-                  onChange={(e) => setActivationSector(e.target.value)}
-                  className="border-input h-9 w-full rounded-md border bg-transparent px-3 py-1 text-sm shadow-xs outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]"
-                >
-                  <option value="">Sélectionner...</option>
-                  {sectorOptions.map((s) => (
-                    <option key={s} value={s}>
-                      {s}
-                    </option>
-                  ))}
-                </select>
-              </div>
-               <div>
                 <label className="text-xs font-medium text-black/70">Échantillons donnés*</label>
                 <select
                   value={samplesGiven}
@@ -307,12 +423,9 @@ export default function AddContact() {
                   ))}
                 </select>
               </div>
-            
             </div>
-          </div>
 
-          <div className="rounded-xl border border-black/10 bg-white p-5">
-            <h2 className="text-sm font-semibold text-black mb-4">Questions</h2>
+             <h2 className="text-sm font-semibold text-black mb-4 mt-8">Questions</h2>
 
             {loadingQuestions ? (
               <div className="text-sm text-black/60">Chargement des questions...</div>
@@ -346,6 +459,10 @@ export default function AddContact() {
             )}
           </div>
 
+        
+           
+       
+
           {error && (
             <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
               {error}
@@ -361,7 +478,7 @@ export default function AddContact() {
           <div className="flex justify-end">
             <Button
               type="submit"
-              disabled={submitting || loadingQuestions}
+              disabled={submitting || loadingQuestions || !currentSettings}
               className="bg-black text-white hover:bg-black/90"
             >
               {submitting ? "Envoi..." : "Enregistrer"}

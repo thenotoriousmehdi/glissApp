@@ -20,10 +20,24 @@ model animators {
   users_animators_user_idTousers users?       @relation("animators_user_idTousers", fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
   contacts                       contacts[]
   inventory                      inventory[]
+  animator_current_settings       animator_current_settings?
 
   @@index([chef_id], map: "idx_animators_chef_id")
   @@index([supervisor_id], map: "idx_animators_supervisor_id")
   @@index([user_id], map: "idx_animators_user_id")
+}
+
+model animator_current_settings {
+  id                String     @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  animator_id        String     @unique @db.Uuid
+  wilaya_code        String     @db.VarChar(10)
+  wilaya_name        String     @db.VarChar(50)
+  commune            String     @db.VarChar(50)
+  activation_sector  String     @db.VarChar(50)
+  updated_at         DateTime?  @default(now()) @db.Timestamptz(6)
+  animators          animators  @relation(fields: [animator_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([animator_id], map: "idx_animator_current_settings_animator_id")
 }
 
 model answers {

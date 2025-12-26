@@ -177,8 +177,8 @@ export default function DashboardLayout({
           </SidebarHeader>
 
           <SidebarContent>
-            {navigationSections.map((section) => (
-              <SidebarGroup >
+            {navigationSections.map((section, sectionIndex) => (
+              <SidebarGroup key={`nav-section-${sectionIndex}`}>
                
 
                 <SidebarGroupContent>
